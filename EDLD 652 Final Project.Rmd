@@ -1,0 +1,183 @@
+---
+title: "Vocabulary Development Across Four Languages"
+subtitle: "Cantonese, English, Mandarin, and Spanish"
+author: "Kayla McComb"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(readr)
+library(plotly)
+library(tidyverse)
+library(visNetwork)
+
+by_child <- read_csv("wordbank_bychild_data.csv")
+
+network_data <- read_csv("wordbank_instrument.csv")
+
+#demographics
+
+mandarin <- by_child %>% 
+  filter(language == "Mandarin (Beijing)") %>% 
+  filter(age > 15 & age < 31) %>% 
+  filter(monolingual == TRUE) %>% 
+  filter(form == "WG" | form == "WS")
+
+english <- by_child %>% 
+  filter(language == "English (American)") %>% 
+  filter(age > 15 & age < 31) %>% 
+  filter(monolingual == TRUE) %>% 
+  filter(form == "WG" | form == "WS")
+
+spanish <- by_child %>% 
+  filter(language == "Spanish (Mexican)") %>% 
+  filter(age > 15 & age < 31) %>% 
+  filter(monolingual == TRUE) %>% 
+  filter(form == "WG" | form == "WS")
+
+cantonese <- by_child %>% 
+  filter(language == "Cantonese") %>% 
+  filter(age > 15 & age < 31) %>% 
+  filter(monolingual == TRUE) %>% 
+  filter(form == "WG" | form == "WS")
+
+n_distinct(mandarin$child_id)
+n_distinct(english$child_id)
+n_distinct(spanish$child_id)
+n_distinct(cantonese$child_id)
+
+```
+
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+This dashboard visualizes some of the data from [The Wordbank Project](https://wordbank.stanford.edu/). The Wordbank Project is an open science database of vocabulary assessment results from over 80,000 children and across 38 languages. Because the data are so numerous, this dashboard focuses on vocabulary trajectories across four languages (two tonal and two non-tonal). The represented languages include Mandarin, Cantonese, English, and Spanish. 
+
+The data for these visualizations are obtained through caregiver report. To complete the vocabulary assessment, caregivers identify which vocabulary words their infant can comprehend. These words are then summed to create the total comprehensive vocabulary score.
+
+###
+
+```{r}
+
+by_child %>% 
+  filter(language == "English (American)" | language == "Spanish (Mexican)" | language == "Mandarin (Beijing)" | language == "Cantonese") %>% 
+  filter(age > 15 & age < 31) %>% 
+  filter(form == "WG" | form == "WS") %>% 
+  filter(monolingual == TRUE) %>% 
+  ggplot(aes(x = age, y = comprehension, color = language)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_continuous(breaks = c(seq(16,30,1)), limits = c(16,31)) +
+  scale_y_continuous(breaks = c(seq(0, 810, 100)), limits = c(0, 810)) +
+  theme(
+    panel.grid.major.y = element_line(linetype = "dashed", color = "gray"),
+    panel.background = element_blank(),
+    axis.title.y = element_text(angle = 360, vjust = 1, size = 8),
+    plot.title = element_text(face = "bold", size = 10),
+    axis.ticks.y = element_blank(),
+    plot.caption = element_text(size = 8),
+    legend.position = "none") +
+  labs(
+    title = "Vocabulary Trajectories for Infant Speakers of Four Languages",
+    subtitle = "Cantonese, English, Mandarin, and Spanish",
+    x = "Age (Months)",
+    y = "Vocabulary Size \n in Words Understood",
+    color = "Language", 
+    caption = "Source: Frank, M. C., Braginsky, M., Yurovsky, D., and Marchman, V. A. (2021). \n Variability and Consistency in Early Language Learning: The Wordbank Project."
+  ) +
+  annotate("text", x = 30, y = 810, label = "Mandarin (Beijing)", color = "#00BFC4", size = 3) +
+  annotate("text", x = 30, y = 550, label = "Cantonese", color = "#F8766D", size = 3) +
+  annotate("text", x = 30, y = 490, label = "English (American)", color = "#7CAE00", size = 3) +
+  annotate("text", x = 30, y = 385, label = "Spanish (Mexican)", color = "#C77CFF", size = 3)
+
+```
+
+###
+
+Vocabulary trajectories for 16–30-month-old monolingual infants across four languages (Cantonese, English, Mandarin, and Spanish) are presented. These trajectories represent 6903 infant English speakers, 1510 Spanish speakers, 1208 Cantonese speakers, and 1056 Mandarin speakers. 
+
+This visualization represents line of best fit (as constructed with a linear model) for vocabulary size by age.
+
+It should be noted here that comparisons of vocabulary size across languages can often be misleading. Due to differences in structure, usage, and writing, absolute vocabulary size represented here may not be indicative of any real significant language development outcome.
+
+After receiving peer feedback, this visualization was altered to include clearer axis labels (e.g., "Comprehensive Vocabulary Size" changed to "Vocabulary Size in Words Understood"), and a legend identifying each of the four languages was replaced with labels placed directly on the plot and color-coded. The source of the data was also added as a caption. 
+
+###
+
+```{r}
+
+library(ggtext)
+
+by_child %>% 
+  filter(language == "English (American)" | language == "Spanish (Mexican)" | language == "Mandarin (Beijing)" | language == "Cantonese") %>% 
+  filter(age > 15 & age < 31) %>% 
+  filter(form == "WG" | form == "WS") %>% 
+  filter(sex == "Female" | sex == "Male") %>% 
+  filter(monolingual == TRUE) %>% 
+  ggplot(aes(x = age, y = comprehension, color = sex)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~language) +
+  scale_x_continuous(breaks = c(seq(16,30,2)), limits = c(16,30)) +
+  scale_y_continuous(breaks = c(seq(0, 800, 100)), limits = c(0, 800)) +
+  theme(
+    panel.grid.major.y = element_line(linetype = "dashed", color = "white"),
+    panel.background = element_blank(),
+    axis.title.y = element_markdown(angle = 360, vjust = 1, size = 8),
+    plot.title = element_markdown(face = "bold", hjust = 0, size = 10),
+    axis.ticks.y = element_blank(),
+    plot.caption = element_markdown(size = 8),
+    legend.position = "none") +
+  labs(
+    title = "**<span style='color:#F8766D'>Female</span> Infant Vocabulary Size Exceeds <span style='color:#00BFC4'>Male</span> Vocabulary  Size <br> at All Ages and Across Four Languages**",
+    subtitle = "Cantonese, English, Mandarin, and Spanish",
+    x = "Age (Months)",
+    y = "Vocabulary Size <br> in Words Understood",
+    color = "Sex",
+    caption = "Source: Frank, M. C., Braginsky, M., Yurovsky, D., and Marchman, V. A. (2021). <br> Variability and Consistency in Early Language Learning: The Wordbank Project."
+  )
+
+```
+
+###
+
+Vocabulary trajectories for 16-30-month-old monolingual infants across four languages and separated by sex are presented. Again, this visualization represents line of best fit (as constructed with a linear model) for vocabulary size by age.
+
+On average, female infants have larger vocabulary sizes across all ages and languages. This finding has been previously found in the literature. Some theories suggest this caregiver reported vocabulary size difference may be due to a reporting bias based on gender stereotypes. 
+
+After receiving peer feedback, this visualization was altered to include clearer axis labels. The legend identifying sex was replaced with color-coded categories in the title of the plot. The source of the data was also added as a caption, and grid lines were removed to clear away visual clutter.
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+###
+
+The productive semantic network of an 8-month-old infant is shown. For the purposes of this visualization, “productive” means the words that have been spoken by the infant, as reported by the caregiver. Semantic networks visually represent how vocabulary may be stored in the brain. This visualization connects vocabulary words by category (sounds, animals, toys) and signifies potential bridges between two categories (“meow” linking sound category words to “cat”, “ball” linked to “dog”). Users can drag the network around to change the view or zoom in and out. Additionally, users can filter by vocabulary word to highlight specific verbal connections. 
+
+This visualization was surprisingly difficult to create. Shape, size, and color of nodes and lines were adjusted until a satisfactory visualization was found. From receiving peer feedback, I adjusted the title of the plot. 
+
+
+```{r}
+
+
+nodes <- network_data$item_definition
+
+nodes <- data.frame(id = nodes, title = nodes, 
+                    shape = "dot",
+                    size = 6, color = "black")
+
+edges <- data.frame(from = c("baa baa", "choo choo", "meow", "cat", "cat", "dog", "pig", "dog"),
+                    to =  c("choo choo", "meow", "baa baa", "meow", "dog", "pig", "cat", "ball"))
+
+visNetwork(nodes, edges,
+           main = "<div style='font-size: 20px;'><b>Productive Semantic Network</b></div><div style='font-size: 14px; color: gray;'>English Speaking 8-month-old Infant</div>") %>%
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE)
+
+```
+
+
+
+
